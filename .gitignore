@@ -1,0 +1,9 @@
+.clang
+.codelite
+cmake_install.cmake
+CMakeCache.txt
+CMakeFiles/**
+Makefile
+cryptopals*
+# outputs from 6 have .result
+*.result
