@@ -7,3 +7,5 @@ Makefile
 cryptopals*
 # outputs from 6 have .result
 *.result
+*.a
+compile_commands.json
