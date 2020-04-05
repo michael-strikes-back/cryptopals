@@ -5,8 +5,8 @@
 
 int main(const int argc, const char **argv) {
 	if (argc < 2 || argv[1] == nullptr || argv[1][0] != '-' ||
-		argv[1][1] < '2' || argv[1][1] > '6' || argv[1][2] != '\0') {
-		fputs("Option required. [-2 -3 -4 -5 -6] <args>", stderr);
+		argv[1][1] < '2' || argv[1][1] > '7' || argv[1][2] != '\0') {
+		fputs("Option required. [-2 -3 -4 -5 -6 -7] <args>", stderr);
 		fputc('\n', stderr);
 		return 1;
 	}
@@ -20,6 +20,7 @@ int main(const int argc, const char **argv) {
 		case '4': main_4(sub_argc, sub_argv); break;
 		case '5': main_5(sub_argc, sub_argv); break;
 		case '6': main_6(sub_argc, sub_argv); break;
+		case '7': main_7(sub_argc, sub_argv); break;
 		default: assert(0);
 	}
 
