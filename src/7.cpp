@@ -14,6 +14,10 @@
 
 #include "shared.hpp"
 
+static const size_t read_chunk_size= 1024;
+// Allow enough space in output buffer for additional block
+byte_t outbuf[read_chunk_size + EVP_MAX_BLOCK_LENGTH];
+
 void ssl_init() {
 	SSL_load_error_strings();
 	SSL_library_init();
@@ -34,38 +38,30 @@ void main_7(int argc, const char **argv) {
 	ssl_init();
 
 	EVP_CIPHER_CTX *ctx;
+	// $NOTE: typically this wouldn't be hard-coded
 	const byte_t key[]= "YELLOW SUBMARINE";
-	/* Allow enough space in output buffer for additional block */
-	byte_t outbuf[4096 + EVP_MAX_BLOCK_LENGTH];
-	int outlen;
 	int plaintext_len;
 	size_t enciphered_len;
 	FILE* outf;
-	byte_t *enciphered;
+	byte_t *enciphered_it;
+	byte_t *enciphered_begin;
+	byte_t *enciphered_end;
 
-	enciphered= get_enciphered_text_from_base64_file(argv[0], &enciphered_len);
-	if (enciphered==nullptr) {
+	// first decode entire input file into base64.
+	enciphered_begin= get_enciphered_text_from_base64_file(argv[0], &enciphered_len);
+	if (enciphered_begin==nullptr) {
 		// already messaged
 		return;
 	}
 
-	if (nullptr == (ctx= EVP_CIPHER_CTX_new())) {
+	ctx= EVP_CIPHER_CTX_new();
+	if (nullptr == ctx) {
 		ssl_handle_errors();
 	}
 	if (1 != EVP_DecryptInit_ex(ctx, EVP_aes_128_ecb(), nullptr, key, nullptr)) {
 		ssl_handle_errors();
 	}
-	assert(EVP_CIPHER_CTX_key_length(ctx) == 16);
-
-	if (1 != EVP_DecryptUpdate(ctx, outbuf, &plaintext_len, enciphered, enciphered_len)) {
-		ssl_handle_errors();
-	}
-	outlen= plaintext_len;
-
-	if (1 != EVP_DecryptFinal_ex(ctx, outbuf + plaintext_len, &plaintext_len)) {
-		ssl_handle_errors();
-	}
-	outlen+= plaintext_len;
+	assert(16 == EVP_CIPHER_CTX_key_length(ctx));
 
 	outf = fopen(argv[1], "wb");
 	if (outf == nullptr) {
@@ -73,8 +69,29 @@ void main_7(int argc, const char **argv) {
 		return;
 	}
 
-	fwrite(outbuf, 1, outlen, outf);
+	enciphered_it= enciphered_begin;
+	enciphered_end= enciphered_begin + enciphered_len;
+	for (; enciphered_it + read_chunk_size < enciphered_end; enciphered_it+= read_chunk_size) {
+		if (1 != EVP_DecryptUpdate(ctx, outbuf, &plaintext_len, enciphered_it, read_chunk_size)) {
+			ssl_handle_errors();
+		}
+		fwrite(outbuf, 1, plaintext_len, outf);
+	}
+
+	if (enciphered_it < enciphered_end) {
+		if (1 != EVP_DecryptUpdate(ctx, outbuf, &plaintext_len, enciphered_it, enciphered_end - enciphered_it)) {
+			ssl_handle_errors();
+		}
+		fwrite(outbuf, 1, plaintext_len, outf);
+	}
+
+	if (1 != EVP_DecryptFinal_ex(ctx, outbuf, &plaintext_len)) {
+		ssl_handle_errors();
+	}
+
+	fwrite(outbuf, 1, plaintext_len, outf);
 	fclose(outf);
 
 	EVP_CIPHER_CTX_free(ctx);
+	free(enciphered_begin);
 }
