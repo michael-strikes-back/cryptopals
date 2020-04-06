@@ -35,6 +35,10 @@ void xor_repeating( const byte_t *a, size_t an, const byte_t *b, size_t bn, byte
 bool hex_decode(const char *str, size_t strn, byte_t *out_bytes, size_t byten_max, size_t *byten);
 void hex_encode(const unsigned char *bytes, size_t bytesn, char *out_str, size_t strn);
 
+byte_t *get_enciphered_text_from_base64_file(
+	const char *file_name,
+	size_t *out_enciphered_len);
+
 template<typename t>
 t max(t a, t b) {
 	return a > b ? a : b;

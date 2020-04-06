@@ -1,10 +1,15 @@
 #define FORCE_BYTE_HAMMING_DISTANCE
 
 #include <cassert>
-#include <cstring>
-#include <cstdio>
 #include <cctype>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include "shared.hpp"
+
+extern "C" {
+	#include "base64.h"
+}
 
 const char char_freq_order[]= "etaoi nshrdlcumwfgypbvkjxqz";
 const char low_freq_characters[]= "-!\":;<=>@#$%&()*+/[\\]^_`{|}~";
@@ -210,6 +215,42 @@ void hex_encode(const unsigned char *bytes, size_t bytesn, char *out_str, size_t
 	assert(strn >= 1);
 	// $TODO stub
 	out_str[0]= '\0';
+}
+
+byte_t *get_enciphered_text_from_base64_file(
+	const char *file_name,
+	size_t *out_enciphered_len) {
+
+	FILE *const f= fopen(file_name, "rb");
+
+	if (nullptr == f) {
+		fputs("file could not be opened\n", stderr);
+		return nullptr;
+	}
+
+	if (fseek(f, 0, SEEK_END)) {
+		fputs("failed to get file size\n", stderr);
+		return nullptr;
+	}
+	const size_t file_size= ftell(f);
+
+	fseek(f, 0, SEEK_SET);
+
+	byte_t *base64_encoded= static_cast<byte_t *>(malloc(file_size));
+	assert(base64_encoded);
+
+	if (file_size != fread(base64_encoded, 1, file_size, f)) {
+		fputs("failed to read contents\n", stderr);
+		return nullptr;
+	}
+	fclose(f);
+
+	byte_t *enciphered= base64_decode(base64_encoded, file_size, out_enciphered_len);
+	assert(enciphered);
+
+	free(base64_encoded);
+
+	return enciphered;
 }
 
 static int score_top_chars(

@@ -6,10 +6,6 @@
 
 #include "shared.hpp"
 
-extern "C" {
-#include "base64.h"
-}
-
 class c_skip_iterator : public c_string_iterator_interface {
 public:
 	c_skip_iterator(byte_t *source, size_t len, size_t offset, size_t skip_len)
@@ -71,42 +67,6 @@ byte_t get_best_key(c_skip_iterator &enciphered_it, int *out_best_score) {
 
 	assert(!(best_key&0xff00));
 	return static_cast<byte_t>(best_key & 0xff);
-}
-
-byte_t *get_enciphered_text_from_base64_file(
-	const char *file_name,
-	size_t *out_enciphered_len) {
-
-	FILE *const f= fopen(file_name, "rb");
-
-	if (nullptr == f) {
-		fputs("file could not be opened\n", stderr);
-		return nullptr;
-	}
-
-	if (fseek(f, 0, SEEK_END)) {
-		fputs("failed to get file size\n", stderr);
-		return nullptr;
-	}
-	const size_t file_size= ftell(f);
-
-	fseek(f, 0, SEEK_SET);
-
-	byte_t *base64_encoded= static_cast<byte_t *>(malloc(file_size));
-	assert(base64_encoded);
-
-	if (file_size != fread(base64_encoded, 1, file_size, f)) {
-		fputs("failed to read contents\n", stderr);
-		return nullptr;
-	}
-	fclose(f);
-
-	byte_t *enciphered= base64_decode(base64_encoded, file_size, out_enciphered_len);
-	assert(enciphered);
-
-	free(base64_encoded);
-
-	return enciphered;
 }
 
 void main_6(int argc, const char **argv) {
