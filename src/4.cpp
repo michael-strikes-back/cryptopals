@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "shared.hpp"
+#include "main.hpp"
 
 static const size_t k_linebuf_count= 4096*2;
 static const size_t k_textbuf_count= 4096;
@@ -12,7 +13,8 @@ static char line[k_linebuf_count];
 static char enciphered[k_textbuf_count];
 static char plain[k_textbuf_count];
 
-void main_4(int argc, const char **argv) {
+template<>
+void problem<4>(int argc, const char **argv) {
 	int best_score= -1;
 
 	if (argc != 1) {

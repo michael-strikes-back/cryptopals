@@ -5,6 +5,7 @@
 #include <cstring>
 
 #include "shared.hpp"
+#include "main.hpp"
 
 class c_skip_iterator : public c_string_iterator_interface {
 public:
@@ -36,7 +37,7 @@ private:
 byte_t get_best_key(c_skip_iterator &enciphered_it, int *out_best_score) {
 	unsigned short best_key= 0;
 	int best_score= -1;
-	
+
 	for (unsigned short key= 1; key < 256; ++key) {
 		enciphered_it.reset();
 
@@ -47,7 +48,7 @@ byte_t get_best_key(c_skip_iterator &enciphered_it, int *out_best_score) {
 		}
 
 		enciphered_it.reset();
-		int score= score_plain_text(&enciphered_it);
+		int score= score_plain_text(enciphered_it);
 
 		if (score > best_score) {
 			best_score= score;
@@ -69,7 +70,8 @@ byte_t get_best_key(c_skip_iterator &enciphered_it, int *out_best_score) {
 	return static_cast<byte_t>(best_key & 0xff);
 }
 
-void main_6(int argc, const char **argv) {
+template<>
+void problem<6>(int argc, const char **argv) {
 
 	if (argc != 1) {
 		fputs("Usage: -6 [data file]\n", stderr);

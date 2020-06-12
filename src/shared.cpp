@@ -7,14 +7,33 @@
 #include <cstring>
 #include "shared.hpp"
 
+#ifdef REMOVED
 extern "C" {
 	#include "base64.h"
 }
+#endif // REMOVED
 
-const char char_freq_order[]= "etaoi nshrdlcumwfgypbvkjxqz";
-const char low_freq_characters[]= "-!\":;<=>@#$%&()*+/[\\]^_`{|}~";
+//    private types
+
+struct s_b64_index_table_entry {
+	char start;
+	byte_t len;
+};
+
+//    private data
+
+constexpr char char_freq_order[]= "etaoi nshrdlcumwfgypbvkjxqz";
+constexpr char low_freq_characters[]= "-!\":;<=>@#$%&()*+/[\\]^_`{|}~";
+
+constexpr char b64_padding= '=';
+constexpr char b64_index_table[]= "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static_assert(sizeof(b64_index_table) == 0x41);
+
+//    private prototypes
 
 static int score_top_chars(const char *top_chars, size_t len);
+
+//    public definitions
 
 template<typename t_comparable>
 inline bool in_range(
@@ -99,10 +118,10 @@ int score_plain_text(const char *const plain, const size_t plain_count) {
 
 	current_it= &iterator;
 
-	return score_plain_text(&iterator);
+	return score_plain_text(iterator);
 }
 
-int score_plain_text(c_string_iterator_interface *const it) {
+int score_plain_text(c_string_iterator_interface &it) {
 	int non_print_characters= 0;
 	char freqs[COUNT_OF(char_freq_order)];
 	freqs[0]= '\0';
@@ -114,8 +133,8 @@ int score_plain_text(c_string_iterator_interface *const it) {
 		size_t all_freqs[256];
 		memset(all_freqs, 0, sizeof(all_freqs));
 
-		for (; it->has_next(); it->next()) {
-			const char c= tolower(it->current());
+		for (; it.has_next(); it.next()) {
+			const char c= tolower(it.current());
 
 			// special: count characters that are not printable
 			if (!isprint(c) && c !='\n' && all_freqs[static_cast<byte_t>(c)]==0) {
@@ -217,9 +236,93 @@ void hex_encode(const unsigned char *bytes, size_t bytesn, char *out_str, size_t
 	out_str[0]= '\0';
 }
 
+byte_t *base64_decode(const char *const data, size_t len, size_t *out_len) {
+	assert(data);
+	assert(out_len);
+
+	*out_len= 0;
+
+	return nullptr;
+}
+
+char *base64_encode(const byte_t *const data, size_t len, size_t *out_len) {
+	assert(data);
+	assert(out_len);
+
+	// calculate the base64-encoded length
+	{
+		const size_t out_len_truncated= 4 * len / 3;
+		// +1 for null-terminator
+		// pad to the nearest multiple of 4
+		*out_len= 1 +
+			(((out_len_truncated & 3) != 0) ? ((out_len_truncated & ~3) + 4) : out_len_truncated);
+	}
+
+	char *const out_buffer= new char[*out_len];
+
+	const size_t len_truncated= len / 3 * 3;
+	size_t offset_group= 0;
+	size_t output_index= 0;
+
+	constexpr unsigned int sextet= 0x3f;
+	constexpr unsigned int bits_per_character_group= 24;
+	constexpr unsigned int octet_size= 8;
+	constexpr unsigned int sextet_size= 6;
+	constexpr unsigned int octets_per_character_group= bits_per_character_group/octet_size;
+	constexpr unsigned int octet_count= bits_per_character_group/octet_size;
+	constexpr unsigned int sextet_count= bits_per_character_group/sextet_size;
+
+	for (; offset_group < len_truncated; offset_group+= octets_per_character_group) {
+		register unsigned int joined= 0;
+		for (unsigned int octet_index= 0; octet_index < octet_count; ++octet_index) {
+			// in a given group, the hi sextet is the first char, and lo sextet is the last char.
+			const size_t data_index= offset_group + octet_count - 1 - octet_index;
+			joined|= data[data_index] << (octet_index*octet_size);
+		}
+		for (int sextet_index= sextet_count-1; sextet_index >= 0; --sextet_index) {
+			const int sextet_offset= sextet_index * sextet_size;
+			out_buffer[output_index++]= b64_index_table[(joined & (sextet << sextet_offset)) >> sextet_offset];
+		}
+	}
+
+	// calculate remainder with padding
+	if (len != len_truncated) {
+		register unsigned int joined= 0;
+		int lo_used_octet_offset= 0;
+
+		for (int octet_index= octet_count - 1; octet_index >= 0; --octet_index) {
+			const size_t data_index= offset_group + octet_index;
+			if (data_index < len) {
+				const int octet_offset= (octet_count - 1 - octet_index)*octet_size;
+				joined|= data[data_index] << octet_offset;
+				lo_used_octet_offset= octet_offset;
+			}
+		}
+
+		// where a&b are remainder:
+		//    321098765432109876543210
+		//    aaaaaaaabbbbbbbbcccccccc
+		// lo_used_octet_offset will be 8
+		// result base64:
+		//    ddddddeeeeeeffffff======
+
+		for (int sextet_index= sextet_count-1; sextet_index >= 0; --sextet_index) {
+			const int sextet_offset= sextet_index * sextet_size;
+			if (sextet_offset > lo_used_octet_offset) {
+				out_buffer[output_index++]= b64_index_table[(joined & (sextet << sextet_offset)) >> sextet_offset];
+			} else {
+				out_buffer[output_index++]= b64_padding;
+			}
+		}
+	}
+
+	out_buffer[*out_len-1]= '\0';
+	return out_buffer;
+}
+
 byte_t *get_enciphered_text_from_base64_file(
-	const char *file_name,
-	size_t *out_enciphered_len) {
+	const char *const file_name,
+	size_t *const out_enciphered_len) {
 
 	FILE *const f= fopen(file_name, "rb");
 
@@ -236,7 +339,7 @@ byte_t *get_enciphered_text_from_base64_file(
 
 	fseek(f, 0, SEEK_SET);
 
-	byte_t *base64_encoded= static_cast<byte_t *>(malloc(file_size));
+	char *const base64_encoded= new char[file_size];
 	assert(base64_encoded);
 
 	if (file_size != fread(base64_encoded, 1, file_size, f)) {
@@ -248,10 +351,12 @@ byte_t *get_enciphered_text_from_base64_file(
 	byte_t *enciphered= base64_decode(base64_encoded, file_size, out_enciphered_len);
 	assert(enciphered);
 
-	free(base64_encoded);
+	delete[](base64_encoded);
 
 	return enciphered;
 }
+
+//    private definitions
 
 static int score_top_chars(
 	const char *top_chars,
@@ -282,4 +387,3 @@ static int score_top_chars(
 
 	return score;
 }
-

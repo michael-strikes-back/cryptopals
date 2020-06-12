@@ -3,12 +3,15 @@
 #ifndef MAIN_HPP
 #define MAIN_HPP
 
-void main_2(int argc, const char **argv);
-void main_3(int argc, const char **argv);
-void main_4(int argc, const char **argv);
-void main_5(int argc, const char **argv);
-void main_6(int argc, const char **argv);
-void main_7(int argc, const char **argv);
+#ifdef NO
+typedef void (problem_func*)(int argc, const char **argv) t_problem_func;
+
+constexpr int problem_count= 8;
+typedef t_problem_func[problem_count] t_problem_functions;
+#endif // NO
+
+template<int t_problem>
+void problem(int argc, const char **argv);
 
 #endif // MAIN_HPP
 

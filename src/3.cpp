@@ -2,11 +2,12 @@
 #include <cassert>
 #include <cstring>
 #include "shared.hpp"
+#include "main.hpp"
 
 static const char in_hex[]= "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
 
-
-void main_3(int argc, const char **argv) {
+template<>
+void problem<3>(int argc, const char **argv) {
 //The hex encoded string:
 //
 //1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736

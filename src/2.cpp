@@ -1,12 +1,13 @@
 #include <iostream>
 #include <cassert>
 #include "shared.hpp"
+#include "main.hpp"
 
 static const char in_a[]= "1c0111001f010100061a024b53535009181c";
 static const char in_b[]= "686974207468652062756c6c277320657965";
 
-
-void main_2(int argc, const char **argv) {
+template<>
+void problem<2>(int argc, const char **argv) {
 
 //Write a function that takes two equal-length buffers and produces their XOR combination.
 //

@@ -13,6 +13,7 @@
 #endif // OPENSSL_VERSION_NUMBER
 
 #include "shared.hpp"
+#include "main.hpp"
 
 static const size_t read_chunk_size= 1024;
 // Allow enough space in output buffer for additional block
@@ -28,7 +29,8 @@ void ssl_handle_errors() {
 	abort();
 }
 
-void main_7(int argc, const char **argv) {
+template<>
+void problem<7>(int argc, const char **argv) {
 
 	if (argc != 2) {
 		fputs("Usage: -7 [in file] [out file]\n", stderr);
