@@ -188,11 +188,28 @@ int score_plain_text(c_string_iterator_interface &it) {
 }
 
 bool hex_decode(const char *str, size_t strn, byte_t *out_bytes, size_t byten_max, size_t *out_byten) {
-	const char num_start= '0';
-	const char num_end= '9';
-	const char alpha_start= 'a';
-	const char alpha_end= 'f';
-	const char lower_case_diff= 'a' - 'A';
+	static constexpr struct {
+		// MSB is set for valid, e.g. 0x1e for nibble '0xe'
+		char nibble_with_valid_msb;
+	} decode_table[]= {
+		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0x10
+		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0x20
+		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0x30
+		{0x10},{0x11},{0x12},{0x13},{0x14},{0x15},{0x16},{0x17},{0x18},{0x19},{},{},{},{},{},{}, // 0x40
+		{},{0x1a},{0x1b},{0x1c},{0x1d},{0x1e},{0x1f},{},{},{},{},{},{},{},{},{},                 // 0x50
+		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0x60
+		{},{0x1a},{0x1b},{0x1c},{0x1d},{0x1e},{0x1f},{},{},{},{},{},{},{},{},{},                 // 0x70
+		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0x80
+		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0x90
+		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0xa0
+		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0xb0
+		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0xc0
+		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0xd0
+		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0xe0
+		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0xf0
+		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0x100
+	};
+	static_assert(COUNT_OF(decode_table) == 0x100);
 
 	bool success= true;
 	size_t i;
@@ -200,27 +217,14 @@ bool hex_decode(const char *str, size_t strn, byte_t *out_bytes, size_t byten_ma
 		if (i+1 > strn) { success= false; break; }
 		if (i/2 > byten_max) { success= false; break; }
 
-		char hi_nibble= str[i];
-		char lo_nibble= str[i+1];
+		char hi_nibble= decode_table[static_cast<unsigned char>(str[i])].nibble_with_valid_msb;
+		char lo_nibble= decode_table[static_cast<unsigned char>(str[i+1])].nibble_with_valid_msb;
 
-		hi_nibble+= in_range(hi_nibble, 'A', 'Z') ? lower_case_diff : 0;
-		lo_nibble+= in_range(lo_nibble, 'A', 'Z') ? lower_case_diff : 0;
+		// check for success and strip off msb
+		success= success && (hi_nibble & 0x10) && (lo_nibble & 0x10);
 
-		if (in_range(hi_nibble, num_start, num_end)) {
-			hi_nibble= hi_nibble - num_start;
-		} else if (in_range(hi_nibble, alpha_start, alpha_end)) {
-			hi_nibble= hi_nibble - alpha_start + 0xa;
-		} else {
-			success= false;
-		}
-
-		if (in_range(lo_nibble, num_start, num_end)) {
-			lo_nibble= lo_nibble - num_start;
-		} else if (in_range(lo_nibble, alpha_start, alpha_end)) {
-			lo_nibble= lo_nibble - alpha_start + 0xa;
-		} else {
-			success= false;
-		}
+		hi_nibble&= 0xf;
+		lo_nibble&= 0xf;
 
 		out_bytes[i/2]= (hi_nibble << 4) | lo_nibble;
 	}
