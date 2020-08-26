@@ -236,7 +236,15 @@ void hex_encode(const unsigned char *bytes, size_t bytesn, char *out_str, size_t
 	out_str[0]= '\0';
 }
 
+constexpr unsigned int sextet= 0x3f;
+constexpr unsigned int bits_per_character_group= 24;
+constexpr unsigned int octet_size= 8;
+constexpr unsigned int sextet_size= 6;
+constexpr unsigned int octet_count_per_group= bits_per_character_group/octet_size;
+constexpr unsigned int sextet_count_per_group= bits_per_character_group/sextet_size;
+
 byte_t *base64_decode(const char *const data, size_t len, size_t *out_len) {
+
 	assert(data);
 	assert(out_len);
 
@@ -246,40 +254,34 @@ byte_t *base64_decode(const char *const data, size_t len, size_t *out_len) {
 }
 
 char *base64_encode(const byte_t *const data, size_t len, size_t *out_len) {
+
 	assert(data);
 	assert(out_len);
 
+	const size_t len_common_factor= len / octet_count_per_group;
+	const size_t len_truncated= len_common_factor * octet_count_per_group;
+
 	// calculate the base64-encoded length
 	{
-		const size_t out_len_truncated= 4 * len / 3;
-		// +1 for null-terminator
-		// pad to the nearest multiple of 4
-		*out_len= 1 +
-			(((out_len_truncated & 3) != 0) ? ((out_len_truncated & ~3) + 4) : out_len_truncated);
+		const size_t out_len_truncated= len_common_factor * sextet_count_per_group;
+		// pad to the nearest multiple
+		*out_len= ((len_truncated != len) ? (out_len_truncated + sextet_count_per_group) : out_len_truncated);
 	}
 
-	char *const out_buffer= new char[*out_len];
+	// + 1 for null terminator
+	char *const out_buffer= new char[*out_len + 1];
 
-	const size_t len_truncated= len / 3 * 3;
 	size_t offset_group= 0;
 	size_t output_index= 0;
 
-	constexpr unsigned int sextet= 0x3f;
-	constexpr unsigned int bits_per_character_group= 24;
-	constexpr unsigned int octet_size= 8;
-	constexpr unsigned int sextet_size= 6;
-	constexpr unsigned int octets_per_character_group= bits_per_character_group/octet_size;
-	constexpr unsigned int octet_count= bits_per_character_group/octet_size;
-	constexpr unsigned int sextet_count= bits_per_character_group/sextet_size;
-
-	for (; offset_group < len_truncated; offset_group+= octets_per_character_group) {
+	for (; offset_group < len_truncated; offset_group+= octet_count_per_group) {
 		register unsigned int joined= 0;
-		for (unsigned int octet_index= 0; octet_index < octet_count; ++octet_index) {
+		for (unsigned int octet_index= 0; octet_index < octet_count_per_group; ++octet_index) {
 			// in a given group, the hi sextet is the first char, and lo sextet is the last char.
-			const size_t data_index= offset_group + octet_count - 1 - octet_index;
+			const size_t data_index= offset_group + octet_count_per_group - 1 - octet_index;
 			joined|= data[data_index] << (octet_index*octet_size);
 		}
-		for (int sextet_index= sextet_count-1; sextet_index >= 0; --sextet_index) {
+		for (int sextet_index= sextet_count_per_group-1; sextet_index >= 0; --sextet_index) {
 			const int sextet_offset= sextet_index * sextet_size;
 			out_buffer[output_index++]= b64_index_table[(joined & (sextet << sextet_offset)) >> sextet_offset];
 		}
@@ -290,10 +292,11 @@ char *base64_encode(const byte_t *const data, size_t len, size_t *out_len) {
 		register unsigned int joined= 0;
 		int lo_used_octet_offset= 0;
 
-		for (int octet_index= octet_count - 1; octet_index >= 0; --octet_index) {
+		for (unsigned int octet_index= 0; octet_index < octet_count_per_group; ++octet_index) {
+			// in a given group, the hi sextet is the first char, and lo sextet is the last char.
 			const size_t data_index= offset_group + octet_index;
 			if (data_index < len) {
-				const int octet_offset= (octet_count - 1 - octet_index)*octet_size;
+				const int octet_offset= (octet_count_per_group - octet_index - 1) * octet_size;
 				joined|= data[data_index] << octet_offset;
 				lo_used_octet_offset= octet_offset;
 			}
@@ -306,9 +309,9 @@ char *base64_encode(const byte_t *const data, size_t len, size_t *out_len) {
 		// result base64:
 		//    ddddddeeeeeeffffff======
 
-		for (int sextet_index= sextet_count-1; sextet_index >= 0; --sextet_index) {
+		for (int sextet_index= sextet_count_per_group-1; sextet_index >= 0; --sextet_index) {
 			const int sextet_offset= sextet_index * sextet_size;
-			if (sextet_offset > lo_used_octet_offset) {
+			if (static_cast<int>(sextet_offset + sextet_size) > lo_used_octet_offset) {
 				out_buffer[output_index++]= b64_index_table[(joined & (sextet << sextet_offset)) >> sextet_offset];
 			} else {
 				out_buffer[output_index++]= b64_padding;
@@ -316,7 +319,9 @@ char *base64_encode(const byte_t *const data, size_t len, size_t *out_len) {
 		}
 	}
 
-	out_buffer[*out_len-1]= '\0';
+	assert(output_index == *out_len);
+
+	out_buffer[*out_len]= '\0';
 	return out_buffer;
 }
 
