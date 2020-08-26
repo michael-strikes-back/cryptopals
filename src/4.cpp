@@ -14,7 +14,7 @@ static char enciphered[k_textbuf_count];
 static char plain[k_textbuf_count];
 
 template<>
-void problem<4>(int argc, const char **argv) {
+void problem_node<4>::invoke(int argc, const char **argv) {
 	int best_score= -1;
 
 	if (argc != 1) {

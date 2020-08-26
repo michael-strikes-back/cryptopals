@@ -3,6 +3,6 @@
 #include "main.hpp"
 
 template<>
-void problem<8>(int argc, const char **argv) {
+void problem_node<8>::invoke(int argc, const char **argv) {
 	
 }

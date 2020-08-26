@@ -71,7 +71,7 @@ byte_t get_best_key(c_skip_iterator &enciphered_it, int *out_best_score) {
 }
 
 template<>
-void problem<6>(int argc, const char **argv) {
+void problem_node<6>::invoke(int argc, const char **argv) {
 
 	if (argc != 1) {
 		fputs("Usage: -6 [data file]\n", stderr);

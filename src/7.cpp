@@ -30,7 +30,7 @@ void ssl_handle_errors() {
 }
 
 template<>
-void problem<7>(int argc, const char **argv) {
+void problem_node<7>::invoke(int argc, const char **argv) {
 
 	if (argc != 2) {
 		fputs("Usage: -7 [in file] [out file]\n", stderr);

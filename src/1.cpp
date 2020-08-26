@@ -13,7 +13,7 @@ constexpr const char *cases[]= {
 };
 
 template<>
-void problem<1>(int argc, const char **argv) {
+void problem_node<1>::invoke(int argc, const char **argv) {
 
 	size_t case_index;
 	byte_t a[256];

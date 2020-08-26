@@ -13,7 +13,7 @@ static const byte_t key[]= "ICE";
 static unsigned char enciphered[4096];
 
 template<>
-void problem<5>(int argc, const char **argv) {
+void problem_node<5>::invoke(int argc, const char **argv) {
 	
 	xor_repeating(plain, COUNT_OF(plain)-1, key, COUNT_OF(key)-1, enciphered, COUNT_OF(enciphered)-1);
 	enciphered[COUNT_OF(plain)-1]= '\0';

@@ -7,7 +7,7 @@ static const char in_a[]= "1c0111001f010100061a024b53535009181c";
 static const char in_b[]= "686974207468652062756c6c277320657965";
 
 template<>
-void problem<2>(int argc, const char **argv) {
+void problem_node<2>::invoke(int argc, const char **argv) {
 
 //Write a function that takes two equal-length buffers and produces their XOR combination.
 //
