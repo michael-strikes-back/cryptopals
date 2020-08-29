@@ -10,6 +10,7 @@ void problem_node<prob_no>::try_invoke(
 		int problem_index,
 		int argc,
 		const char **argv) {
+	// idea here is to compile a linked list, down to 1.
 
 	if (problem_index == this_problem_number) {
 		invoke(argc, argv);
@@ -32,7 +33,7 @@ template<> struct problem_node<0> {
 int main(const int argc, const char **argv) {
 	
 	if (argc < 2 || argv[1] == nullptr || argv[1][0] != '-' ||
-		argv[1][1] < '1' || argv[1][1] > '8' || argv[1][2] != '\0') {
+		argv[1][1] < '1' || argv[1][1] > ('0'+max_problem_number) || argv[1][2] != '\0') {
 		fprintf(stderr, "Option required. [-1 .. -%d] <args>\n", max_problem_number);
 		fputc('\n', stderr);
 		return 1;

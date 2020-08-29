@@ -186,19 +186,19 @@ int score_plain_text(c_string_iterator_interface &it) {
 
 	return score;
 }
-
 bool hex_decode(const char *str, size_t strn, byte_t *out_bytes, size_t byten_max, size_t *out_byten) {
 	static constexpr struct {
-		// MSB is set for valid, e.g. 0x1e for nibble '0xe'
+		// zero when not a valid nibble character
+		// otherwise, negate to get the mapped value
 		char nibble_with_valid_msb;
 	} decode_table[]= {
 		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0x10
 		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0x20
 		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0x30
-		{0x10},{0x11},{0x12},{0x13},{0x14},{0x15},{0x16},{0x17},{0x18},{0x19},{},{},{},{},{},{}, // 0x40
-		{},{0x1a},{0x1b},{0x1c},{0x1d},{0x1e},{0x1f},{},{},{},{},{},{},{},{},{},                 // 0x50
+		{~0x0},{~0x1},{~0x2},{~0x3},{~0x4},{~0x5},{~0x6},{~0x7},{~0x8},{~0x9},{},{},{},{},{},{}, // 0x40
+		{},{~0xA},{~0xB},{~0xC},{~0xD},{~0xE},{~0xF},{},{},{},{},{},{},{},{},{},                 // 0x50
 		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0x60
-		{},{0x1a},{0x1b},{0x1c},{0x1d},{0x1e},{0x1f},{},{},{},{},{},{},{},{},{},                 // 0x70
+		{},{~0xa},{~0xb},{~0xc},{~0xd},{~0xe},{~0xf},{},{},{},{},{},{},{},{},{},                 // 0x70
 		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0x80
 		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0x90
 		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0xa0
@@ -220,11 +220,10 @@ bool hex_decode(const char *str, size_t strn, byte_t *out_bytes, size_t byten_ma
 		char hi_nibble= decode_table[static_cast<unsigned char>(str[i])].nibble_with_valid_msb;
 		char lo_nibble= decode_table[static_cast<unsigned char>(str[i+1])].nibble_with_valid_msb;
 
-		// check for success and strip off msb
-		success= success && (hi_nibble & 0x10) && (lo_nibble & 0x10);
-
-		hi_nibble&= 0xf;
-		lo_nibble&= 0xf;
+		// check for success
+		success= hi_nibble && lo_nibble;
+		hi_nibble= ~hi_nibble;
+		lo_nibble= ~lo_nibble;
 
 		out_bytes[i/2]= (hi_nibble << 4) | lo_nibble;
 	}

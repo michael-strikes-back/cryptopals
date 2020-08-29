@@ -13,13 +13,12 @@ template<int prob_no>
 struct problem_node {
 	static constexpr int this_problem_number= prob_no;
 	static constexpr int next_problem_number= this_problem_number-1;
-	
-	// idea here is to compile a linked list, down to 1.
+
 	static void try_invoke(
 		int problem_index,
 		int argc,
 		const char **argv);
-		
+
 	static void invoke(
 		int argc,
 		const char **argv);
