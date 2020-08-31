@@ -213,9 +213,16 @@ bool hex_decode(const char *str, size_t strn, byte_t *out_bytes, size_t byten_ma
 
 	bool success= true;
 	size_t i;
+	// $TODO if better perf needed, can be converted to unrolled, see example technique in hex_encode
 	for (i= 0; success && str[i]!='\0'; i+= 2) {
-		if (i+1 > strn) { success= false; break; }
-		if (i/2 > byten_max) { success= false; break; }
+		if (i+1 > strn) {
+			success= false;
+			break;
+		}
+		if (i/2 > byten_max) {
+			success= false;
+			break;
+		}
 
 		char hi_nibble= decode_table[static_cast<unsigned char>(str[i])].nibble_with_valid_msb;
 		char lo_nibble= decode_table[static_cast<unsigned char>(str[i+1])].nibble_with_valid_msb;
@@ -233,12 +240,38 @@ bool hex_decode(const char *str, size_t strn, byte_t *out_bytes, size_t byten_ma
 	return success;
 }
 
-void hex_encode(const unsigned char *bytes, size_t bytesn, char *out_str, size_t strn) {
-	assert(strn >= 1);
-	// $TODO stub
-	out_str[0]= '\0';
+size_t hex_encode(const byte_t *bytes, size_t bytesn, char *out_str, size_t str_max) {
+
+	// I was lazy and made assumptions when I wrote this.
+	static_assert(sizeof(char)==1);
+
+	assert(str_max >= bytesn * 2 + 1);
+	const char lookup[]= "0123456789abcdef";
+
+	size_t i= 0;
+
+	// explicitly unroll for the bulk of the data
+	const size_t bytesn_aligned= (bytesn >> 4) << 4;
+	for (; i < bytesn_aligned; i+= 0x10) {
+		for (int offset= 0; offset < 0x10; ++offset) {
+			out_str[(i+offset)*2]= lookup[bytes[(i+offset)]>>4];
+			out_str[(i+offset)*2 + 1]= lookup[bytes[(i+offset)]&0xf];
+		}
+	}
+
+	// remainder
+	for (; i < bytesn; ++i) {
+		out_str[i*2]= lookup[bytes[i]>>4];
+		out_str[i*2 + 1]= lookup[bytes[i]&0xf];
+	}
+
+	out_str[i*2]= '\0';
+
+	// return the length of the encoded string
+	return i*2;
 }
 
+// $TODO split off into a different file and/or prefix so clearly base64
 constexpr unsigned int sextet= 0x3f;
 constexpr unsigned int bits_per_character_group= 24;
 constexpr unsigned int octet_size= 8;

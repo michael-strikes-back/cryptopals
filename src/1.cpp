@@ -1,4 +1,5 @@
 
+#include <cassert>
 #include <cstdio>
 #include <cstring>
 #include "shared.hpp"
@@ -13,18 +14,32 @@ constexpr const char *cases[]= {
 };
 
 template<>
-void problem_node<1>::invoke(int argc, const char **argv) {
+void problem_node<1>::invoke(const int argc, const char **const argv) {
 
 	size_t case_index;
 	byte_t a[256];
 	size_t an;
 	size_t base64_len;
 
+	// run a few test cases on hex and base64 encode/decode
 	for (case_index= 0; case_index < COUNT_OF(cases); case_index+= 2) {
 
 		if (!hex_decode(cases[case_index], strlen(cases[case_index])+1, a, COUNT_OF(a), &an)) {
 			puts("failed to decode string");
 			return;
+		}
+
+		// extra verification check for hex_decode - encode it again to ensure equality.
+		{
+			char case_reencoded[256];
+			size_t case_reencoded_len= hex_encode(a, an, case_reencoded, 256);
+			assert(case_reencoded_len==strlen(cases[case_index]));
+			for (size_t reencoded_index= 0; reencoded_index < case_reencoded_len; ++reencoded_index) {
+				if (case_reencoded[reencoded_index] != cases[case_index][reencoded_index]) {
+					fprintf(stderr, "'%c' != '%c'\n", case_reencoded[reencoded_index], cases[case_index][reencoded_index]);
+					break;
+				}
+			}
 		}
 
 		char *const base64= base64_encode(a, an, &base64_len);

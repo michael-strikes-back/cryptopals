@@ -34,7 +34,7 @@ int score_plain_text(c_string_iterator_interface &it);
 void xor_repeating( const byte_t *a, size_t an, const byte_t *b, size_t bn, byte_t *out, size_t outn);
 
 bool hex_decode(const char *str, size_t strn, byte_t *out_bytes, size_t byten_max, size_t *byten);
-void hex_encode(const unsigned char *bytes, size_t bytesn, char *out_str, size_t strn);
+size_t hex_encode(const byte_t *bytes, size_t bytesn, char *out_str, size_t strn);
 
 byte_t *base64_decode(const char *data, size_t len, size_t *out_len);
 char *base64_encode(const byte_t *data, size_t len, size_t *out_len);
