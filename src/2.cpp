@@ -1,13 +1,14 @@
 #include <iostream>
 #include <cassert>
-#include "shared.hpp"
+#include "encodings.hpp"
 #include "main.hpp"
+#include "shared.hpp"
 
 static const char in_a[]= "1c0111001f010100061a024b53535009181c";
 static const char in_b[]= "686974207468652062756c6c277320657965";
 
 template<>
-void problem_node<2>::invoke(int argc, const char **argv) {
+void problem_node<2>::invoke(const int argc, const char **const argv) {
 
 //Write a function that takes two equal-length buffers and produces their XOR combination.
 //

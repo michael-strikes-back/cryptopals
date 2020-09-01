@@ -1,13 +1,14 @@
 #include <iostream>
 #include <cassert>
 #include <cstring>
-#include "shared.hpp"
+#include "encodings.hpp"
 #include "main.hpp"
+#include "shared.hpp"
 
 static const char in_hex[]= "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
 
 template<>
-void problem_node<3>::invoke(int argc, const char **argv) {
+void problem_node<3>::invoke(const int argc, const char **const argv) {
 //The hex encoded string:
 //
 //1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736

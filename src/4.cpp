@@ -3,8 +3,9 @@
 #include <cstdio>
 #include <cstring>
 
-#include "shared.hpp"
+#include "encodings.hpp"
 #include "main.hpp"
+#include "shared.hpp"
 
 static const size_t k_linebuf_count= 4096*2;
 static const size_t k_textbuf_count= 4096;
