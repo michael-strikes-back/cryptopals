@@ -22,9 +22,9 @@ void problem_node<2>::invoke(const int argc, const char **const argv) {
 //
 //746865206b696420646f6e277420706c6179
 
-	byte_t a[256];
-	byte_t b[256];
-	byte_t out[256];
+	uint8_t a[256];
+	uint8_t b[256];
+	uint8_t out[256];
 	size_t an;
 	size_t bn;
 

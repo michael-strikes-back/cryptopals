@@ -30,11 +30,11 @@ inline bool in_range(
 }
 
 void xor_repeating(
-	const byte_t *a,
+	const uint8_t *a,
 	size_t an,
-	const byte_t *b,
+	const uint8_t *b,
 	size_t bn,
-	byte_t *out,
+	uint8_t *out,
 	size_t outn) {
 	size_t ait;
 	size_t bit= 0;
@@ -47,7 +47,7 @@ void xor_repeating(
 	}
 }
 
-int get_hamming_distance(const byte_t *a, const byte_t *b, size_t count) {
+int get_hamming_distance(const uint8_t *a, const uint8_t *b, size_t count) {
 	int num_differing= 0;
 
 #ifndef FORCE_BYTE_HAMMING_DISTANCE
@@ -60,8 +60,8 @@ int get_hamming_distance(const byte_t *a, const byte_t *b, size_t count) {
 		}
 
 		for (size_t it= count - (count % 4); it < count; ++it) {
-			byte_t ab= a[it];
-			byte_t bb= b[it];
+			uint8_t ab= a[it];
+			uint8_t bb= b[it];
 
 			num_differing+= __builtin_popcount(ab ^ bb);
 		}
@@ -69,8 +69,8 @@ int get_hamming_distance(const byte_t *a, const byte_t *b, size_t count) {
 #endif // FORCE_BYTE_HAMMING_DISTANCE
 	{
 		for (size_t it= 0; it < count; ++it) {
-			byte_t ab= a[it];
-			byte_t bb= b[it];
+			uint8_t ab= a[it];
+			uint8_t bb= b[it];
 
 			num_differing+= __builtin_popcount(ab ^ bb);
 		}
@@ -123,11 +123,11 @@ int score_plain_text(c_string_iterator_interface &it) {
 			const char c= tolower(it.current());
 
 			// special: count characters that are not printable
-			if (!isprint(c) && c !='\n' && all_freqs[static_cast<byte_t>(c)]==0) {
+			if (!isprint(c) && c !='\n' && all_freqs[static_cast<uint8_t>(c)]==0) {
 				non_print_characters++;
 			}
 
-			all_freqs[static_cast<byte_t>(c)]++;
+			all_freqs[static_cast<uint8_t>(c)]++;
 
 			for (freqs_it= 0; freqs_it < freqsn && freqs[freqs_it]!=c; ++freqs_it) { }
 
@@ -138,7 +138,7 @@ int score_plain_text(c_string_iterator_interface &it) {
 				}
 			} else {
 				while (freqs_it > 0 &&
-					all_freqs[static_cast<byte_t>(freqs[freqs_it])] > all_freqs[static_cast<byte_t>(freqs[freqs_it-1])]) {
+					all_freqs[static_cast<uint8_t>(freqs[freqs_it])] > all_freqs[static_cast<uint8_t>(freqs[freqs_it-1])]) {
 
 					const char t= freqs[freqs_it];
 					freqs[freqs_it]= freqs[freqs_it-1];
@@ -173,7 +173,7 @@ int score_plain_text(c_string_iterator_interface &it) {
 	return score;
 }
 
-byte_t *get_enciphered_text_from_base64_file(
+uint8_t *get_enciphered_text_from_base64_file(
 	const char *const file_name,
 	size_t *const out_enciphered_len) {
 
@@ -201,8 +201,9 @@ byte_t *get_enciphered_text_from_base64_file(
 	}
 	fclose(f);
 
-	byte_t *enciphered= base64_decode(base64_encoded, file_size, out_enciphered_len);
-	assert(enciphered);
+	uint8_t *enciphered;
+	bool decoded= base64_decode(base64_encoded, file_size, &enciphered, out_enciphered_len);
+	assert(decoded);
 
 	delete[](base64_encoded);
 

@@ -18,7 +18,7 @@ void problem_node<3>::invoke(const int argc, const char **const argv) {
 //
 //How? Devise some method for "scoring" a piece of English plaintext. Character frequency is a good metric. Evaluate each output and choose the one with the best score.
 
-	byte_t a[256];
+	uint8_t a[256];
 	char b[256];
 	size_t an;
 	size_t bn;

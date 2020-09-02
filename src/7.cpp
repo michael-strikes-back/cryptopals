@@ -17,7 +17,7 @@
 
 static const size_t read_chunk_size= 1024;
 // Allow enough space in output buffer for additional block
-byte_t outbuf[read_chunk_size + EVP_MAX_BLOCK_LENGTH];
+uint8_t outbuf[read_chunk_size + EVP_MAX_BLOCK_LENGTH];
 
 void ssl_init() {
 	SSL_load_error_strings();
@@ -30,7 +30,7 @@ void ssl_handle_errors() {
 }
 
 template<>
-void problem_node<7>::invoke(int argc, const char **argv) {
+void problem_node<7>::invoke(const int argc, const char **const argv) {
 
 	if (argc != 2) {
 		fputs("Usage: -7 [in file] [out file]\n", stderr);
@@ -41,13 +41,13 @@ void problem_node<7>::invoke(int argc, const char **argv) {
 
 	EVP_CIPHER_CTX *ctx;
 	// $NOTE: typically this wouldn't be hard-coded
-	const byte_t key[]= "YELLOW SUBMARINE";
+	const uint8_t key[]= "YELLOW SUBMARINE";
 	int plaintext_len;
 	size_t enciphered_len;
 	FILE* outf;
-	byte_t *enciphered_it;
-	byte_t *enciphered_begin;
-	byte_t *enciphered_end;
+	uint8_t *enciphered_it;
+	uint8_t *enciphered_begin;
+	uint8_t *enciphered_end;
 
 	// first decode entire input file into base64.
 	enciphered_begin= get_enciphered_text_from_base64_file(argv[0], &enciphered_len);

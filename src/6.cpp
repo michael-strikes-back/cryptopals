@@ -9,7 +9,7 @@
 
 class c_skip_iterator : public c_string_iterator_interface {
 public:
-	c_skip_iterator(byte_t *source, size_t len, size_t offset, size_t skip_len)
+	c_skip_iterator(uint8_t *source, size_t len, size_t offset, size_t skip_len)
 		: m_offset(offset)
 		, m_skip(skip_len)
 		, m_source(source)
@@ -31,10 +31,10 @@ private:
 	size_t m_offset;
 	size_t m_skip;
 	size_t m_aligned_len;
-	byte_t *m_source;
+	uint8_t *m_source;
 };
 
-byte_t get_best_key(c_skip_iterator &enciphered_it, int *out_best_score) {
+uint8_t get_best_key(c_skip_iterator &enciphered_it, int *out_best_score) {
 	unsigned short best_key= 0;
 	int best_score= -1;
 
@@ -67,22 +67,29 @@ byte_t get_best_key(c_skip_iterator &enciphered_it, int *out_best_score) {
 	*out_best_score= best_score;
 
 	assert(!(best_key&0xff00));
-	return static_cast<byte_t>(best_key & 0xff);
+	return static_cast<uint8_t>(best_key & 0xff);
 }
 
 template<>
-void problem_node<6>::invoke(int argc, const char **argv) {
-
-	if (argc != 1) {
-		fputs("Usage: -6 [data file]\n", stderr);
-		return;
-	}
+void problem_node<6>::invoke(const int argc, const char **const argv) {
 
 	size_t enciphered_len;
-	byte_t *enciphered= get_enciphered_text_from_base64_file(argv[0], &enciphered_len);
-	if (enciphered==nullptr) {
-		// already messaged
-		return;
+	uint8_t *enciphered;
+
+	// $TODO: pipe from stdin, read one line or block (fixed amount) at a time.
+	switch (argc) {
+		case 1: {
+			enciphered= get_enciphered_text_from_base64_file(argv[0], &enciphered_len);
+			if (enciphered==nullptr) {
+				// already messaged
+				return;
+			}
+			break;
+		}
+		default: {
+			fputs("Usage: -6 [data file]\n", stderr);
+			return;
+		}
 	}
 
 	unsigned short best_key_sizes[]= { 0, 0, 0 };
@@ -93,8 +100,8 @@ void problem_node<6>::invoke(int argc, const char **argv) {
 			double edit_distance= 0;
 			const int k_distances_to_check= 4;
 			for (int i= 0; i < k_distances_to_check; i++) {
-				const byte_t *a= enciphered+key_size*i;
-				const byte_t *b= enciphered+key_size*(i+1);
+				const uint8_t *a= enciphered+key_size*i;
+				const uint8_t *b= enciphered+key_size*(i+1);
 
 				edit_distance+= get_hamming_distance(a, b, key_size);
 			}
@@ -111,7 +118,7 @@ void problem_node<6>::invoke(int argc, const char **argv) {
 		}
 	}
 
-	byte_t *key;
+	uint8_t *key;
 	{
 		unsigned short max_key_size= 0;
 		for (int key_size_it= 0; key_size_it < 3; ++key_size_it) {
@@ -120,7 +127,7 @@ void problem_node<6>::invoke(int argc, const char **argv) {
 			}
 		}
 
-		key= static_cast<byte_t *>(malloc(max_key_size));
+		key= static_cast<uint8_t *>(malloc(max_key_size));
 	}
 
 	for (int key_size_it= 0; key_size_it < 3; ++key_size_it) {
@@ -137,7 +144,7 @@ void problem_node<6>::invoke(int argc, const char **argv) {
 				block_it,
 				key_size);
 
-			byte_t best_key= get_best_key(enciphered_it, &score);
+			uint8_t best_key= get_best_key(enciphered_it, &score);
 			key[block_it]= best_key;
 		}
 
@@ -145,18 +152,23 @@ void problem_node<6>::invoke(int argc, const char **argv) {
 			char out_file_name[256];
 			sprintf(out_file_name, "6_%d.result", key_size);
 
+			key[key_size]= '\0';
+
 			FILE *const outf= fopen(out_file_name, "wb");
 			assert(outf);
 
 			xor_repeating(enciphered, enciphered_len, key, key_size, enciphered, enciphered_len);
 
-			fputs(reinterpret_cast<const char *>(enciphered), outf);
+			if (fwrite(enciphered, sizeof(uint8_t), enciphered_len, outf) != enciphered_len) {
+				fputs("failed to write to output file", stderr);
+			}
 
 			fclose(outf);
 
 			// reverse
 			xor_repeating(enciphered, enciphered_len, key, key_size, enciphered, enciphered_len);
 
+			printf("key: '%s'\n", key);
 			printf("wrote '%s'\n", out_file_name);
 		}
 	}

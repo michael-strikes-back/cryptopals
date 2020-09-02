@@ -6,6 +6,4 @@
 #include <cstddef>
 #include <cstdint>
 
-typedef unsigned char byte_t;
-
 #endif // TYPES_HPP

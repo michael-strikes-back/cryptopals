@@ -15,7 +15,7 @@ static char enciphered[k_textbuf_count];
 static char plain[k_textbuf_count];
 
 template<>
-void problem_node<4>::invoke(int argc, const char **argv) {
+void problem_node<4>::invoke(const int argc, const char **const argv) {
 	int best_score= -1;
 
 	if (argc != 1) {
@@ -36,7 +36,7 @@ void problem_node<4>::invoke(int argc, const char **argv) {
 		line[strcspn(line, "\r\n")]= '\0';
 
 		{
-			byte_t *const enciphered_ptr= reinterpret_cast<unsigned char *>(enciphered);
+			uint8_t *const enciphered_ptr= reinterpret_cast<unsigned char *>(enciphered);
 			if (!hex_decode(line, COUNT_OF(line), enciphered_ptr, COUNT_OF(enciphered), &enciphered_len)) {
 				printf("failed to decode string '%s'\n", line);
 				break;
