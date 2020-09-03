@@ -9,6 +9,6 @@ My cryptopals scratch.
 # Build Instructions
 
 1. navigate to root folder
-2. `./build.sh`
+2. `./build.sh` [debug|release]
 3. `make`
 
