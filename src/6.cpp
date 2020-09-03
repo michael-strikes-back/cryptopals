@@ -134,10 +134,10 @@ void problem_node<6>::invoke(const int argc, const char **const argv) {
 		unsigned short key_size= best_key_sizes[key_size_it];
 
 		// I expect something completely useless to have a score close to 0
-		const int k_good_enough_score= 3;
-		int score= k_good_enough_score;
+		const int good_enough_score= 3;
+		int score= good_enough_score;
 
-		for (unsigned short block_it= 0; score >= k_good_enough_score && block_it < key_size; ++block_it) {
+		for (unsigned short block_it= 0; score >= good_enough_score && block_it < key_size; ++block_it) {
 			c_skip_iterator enciphered_it(
 				enciphered,
 				enciphered_len,
@@ -148,7 +148,7 @@ void problem_node<6>::invoke(const int argc, const char **const argv) {
 			key[block_it]= best_key;
 		}
 
-		if (score >= k_good_enough_score) {
+		if (score >= good_enough_score) {
 			char out_file_name[256];
 			sprintf(out_file_name, "6_%d.result", key_size);
 

@@ -97,12 +97,8 @@ private:
 	size_t m_count;
 };
 
-c_string_iterator_interface *current_it;
-
 int score_plain_text(const char *const plain, const size_t plain_count) {
 	c_contiguous_iterator iterator(plain, plain_count);
-
-	current_it= &iterator;
 
 	return score_plain_text(iterator);
 }

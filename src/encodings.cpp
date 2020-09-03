@@ -23,18 +23,16 @@ constexpr int b64_sextet_count_per_group= b64_bits_per_character_group/sextet_si
 //    public definitions
 
 bool hex_decode(const char *str, size_t strn, uint8_t *out_bytes, size_t byten_max, size_t *out_byten) {
-	static constexpr union {
-		// zero when not a valid nibble character
-		// otherwise, negate to get the mapped value
-		char negated_nibble_if_valid;
-	} decode_table[]= {
+	// zero when not a valid nibble character
+	// otherwise, negate to get the mapped value
+	static constexpr char decode_table[]= {
 		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0x10
 		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0x20
 		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0x30
-		{~0x0},{~0x1},{~0x2},{~0x3},{~0x4},{~0x5},{~0x6},{~0x7},{~0x8},{~0x9},{},{},{},{},{},{}, // 0x40
-		{},{~0xA},{~0xB},{~0xC},{~0xD},{~0xE},{~0xF},{},{},{},{},{},{},{},{},{},                 // 0x50
+		~0x0,~0x1,~0x2,~0x3,~0x4,~0x5,~0x6,~0x7,~0x8,~0x9,{},{},{},{},{},{}, // 0x40
+		{},~0xA,~0xB,~0xC,~0xD,~0xE,~0xF,{},{},{},{},{},{},{},{},{},                 // 0x50
 		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0x60
-		{},{~0xa},{~0xb},{~0xc},{~0xd},{~0xe},{~0xf},{},{},{},{},{},{},{},{},{},                 // 0x70
+		{},~0xa,~0xb,~0xc,~0xd,~0xe,~0xf,{},{},{},{},{},{},{},{},{},                 // 0x70
 		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0x80
 		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0x90
 		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                         // 0xa0
@@ -61,8 +59,8 @@ bool hex_decode(const char *str, size_t strn, uint8_t *out_bytes, size_t byten_m
 			break;
 		}
 
-		char hi_nibble= decode_table[static_cast<unsigned char>(str[i])].negated_nibble_if_valid;
-		char lo_nibble= decode_table[static_cast<unsigned char>(str[i+1])].negated_nibble_if_valid;
+		char hi_nibble= decode_table[static_cast<unsigned char>(str[i])];
+		char lo_nibble= decode_table[static_cast<unsigned char>(str[i+1])];
 
 		// check for success
 		success= hi_nibble && lo_nibble;
@@ -83,23 +81,24 @@ size_t hex_encode(const uint8_t *bytes, size_t bytesn, char *out_str, size_t str
 	static_assert(sizeof(char)==1);
 
 	assert(str_max >= bytesn * 2 + 1);
-	constexpr char lookup[]= "0123456789abcdef";
+	constexpr char encode_table[]= "0123456789abcdef";
+	static_assert(COUNT_OF(encode_table)-1 == 0x10);
 
 	size_t i= 0;
 
-	// explicitly unroll for the bulk of the data
-	const size_t bytesn_aligned= (bytesn >> 4) << 4;
+	// unroll for the bulk of the data
+	const size_t bytesn_aligned= bytesn & ~0xfull;
 	for (; i < bytesn_aligned; i+= 0x10) {
 		for (int offset= 0; offset < 0x10; ++offset) {
-			out_str[(i+offset)*2]= lookup[bytes[(i+offset)]>>4];
-			out_str[(i+offset)*2 + 1]= lookup[bytes[(i+offset)]&0xf];
+			out_str[(i+offset)*2]= encode_table[bytes[(i+offset)]>>4];
+			out_str[(i+offset)*2 + 1]= encode_table[bytes[(i+offset)]&0xf];
 		}
 	}
 
 	// remainder
 	for (; i < bytesn; ++i) {
-		out_str[i*2]= lookup[bytes[i]>>4];
-		out_str[i*2 + 1]= lookup[bytes[i]&0xf];
+		out_str[i*2]= encode_table[bytes[i]>>4];
+		out_str[i*2 + 1]= encode_table[bytes[i]&0xf];
 	}
 
 	out_str[i*2]= '\0';
@@ -110,27 +109,25 @@ size_t hex_encode(const uint8_t *bytes, size_t bytesn, char *out_str, size_t str
 
 bool base64_decode(const char *const encoded_data, size_t encoded_len_raw, uint8_t **const out_bytes, size_t *const out_len) {
 
-	static constexpr union {
-		// zero when not a valid character for the mapped sextet.
-		// otherwise, negate to get the correct value
-		int8_t sextet_negated_if_valid;
-	} decode_table[]= {
-		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                                                             // 0x10
-		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                                                             // 0x20
-		{},{},{},{},{},{},{},{},{},{},{},{~0x3e},{},{},{},{~0x3f},                                                                   // 0x30
-		{~0x34},{~0x35},{~0x36},{~0x37},{~0x38},{~0x39},{~0x3a},{~0x3b},{~0x3c},{~0x3d},{},{},{},{},{},{},                           // 0x40
-		{},{~0x0},{~0x1},{~0x2},{~0x3},{~0x4},{~0x5},{~0x6},{~0x7},{~0x8},{~0x9},{~0xa},{~0xb},{~0xc},{~0xd},{~0xe},                 // 0x50
-		{~0xf},{~0x10},{~0x11},{~0x12},{~0x13},{~0x14},{~0x15},{~0x16},{~0x17},{~0x18},{~0x19},{},{},{},{},{},                       // 0x60
-		{},{~0x1a},{~0x1b},{~0x1c},{~0x1d},{~0x1e},{~0x1f},{~0x20},{~0x21},{~0x22},{~0x23},{~0x24},{~0x25},{~0x26},{~0x27},{~0x28},  // 0x70
-		{~0x29},{~0x2a},{~0x2b},{~0x2c},{~0x2d},{~0x2e},{~0x2f},{~0x30},{~0x31},{~0x32},{~0x33},{},{},{},{},{},                      // 0x80
-		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                                                             // 0x90
-		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                                                             // 0xa0
-		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                                                             // 0xb0
-		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                                                             // 0xc0
-		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                                                             // 0xd0
-		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                                                             // 0xe0
-		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                                                             // 0xf0
-		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                                                             // 0x100
+	// zero when not a valid character for the mapped sextet.
+	// otherwise, negate to get the correct value
+	static constexpr int8_t decode_table[]= {
+		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                              // 0x10
+		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                              // 0x20
+		{},{},{},{},{},{},{},{},{},{},{},~0x3e,{},{},{},~0x3f,                                        // 0x30
+		~0x34,~0x35,~0x36,~0x37,~0x38,~0x39,~0x3a,~0x3b,~0x3c,~0x3d,{},{},{},{},{},{},                // 0x40
+		{},~0x0,~0x1,~0x2,~0x3,~0x4,~0x5,~0x6,~0x7,~0x8,~0x9,~0xa,~0xb,~0xc,~0xd,~0xe,                // 0x50
+		~0xf,~0x10,~0x11,~0x12,~0x13,~0x14,~0x15,~0x16,~0x17,~0x18,~0x19,{},{},{},{},{},              // 0x60
+		{},~0x1a,~0x1b,~0x1c,~0x1d,~0x1e,~0x1f,~0x20,~0x21,~0x22,~0x23,~0x24,~0x25,~0x26,~0x27,~0x28, // 0x70
+		~0x29,~0x2a,~0x2b,~0x2c,~0x2d,~0x2e,~0x2f,~0x30,~0x31,~0x32,~0x33,{},{},{},{},{},             // 0x80
+		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                              // 0x90
+		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                              // 0xa0
+		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                              // 0xb0
+		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                              // 0xc0
+		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                              // 0xd0
+		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                              // 0xe0
+		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                              // 0xf0
+		{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},                                              // 0x100
 	};
 	static_assert(COUNT_OF(decode_table) == 0x100);
 	static_assert(sizeof(char) == 1);
@@ -164,21 +161,21 @@ bool base64_decode(const char *const encoded_data, size_t encoded_len_raw, uint8
 		encoded_raw_last_group_begin= first_in_group;
 	}
 
+	*out_bytes= nullptr;
+	*out_len= 0;
+
 	// calculate the decoded length
 	if ((encoded_len % b64_sextet_count_per_group) != 0) {
 		// $TODO messaging
 		return false;
 	}
 
-	*out_len= encoded_len / b64_sextet_count_per_group * b64_octet_count_per_group;
-
-	if (*out_len == 0) {
-		*out_bytes= nullptr;
+	if (encoded_len == 0) {
 		// nothing to decode
 		return true;
 	}
 
-	*out_bytes= new uint8_t[*out_len];
+	*out_bytes= new uint8_t[encoded_len / b64_sextet_count_per_group * b64_octet_count_per_group];
 	assert(*out_bytes);
 
 	bool success= true;
@@ -199,7 +196,7 @@ bool base64_decode(const char *const encoded_data, size_t encoded_len_raw, uint8
 		}
 
 		for (int32_t sextet_index= 0; sextet_index < b64_sextet_count_per_group; ++sextet_index) {
-			const int8_t sextet_value= decode_table[usable_encoded_chars[sextet_index]].sextet_negated_if_valid;
+			const int8_t sextet_value= decode_table[usable_encoded_chars[sextet_index]];
 			success= success && sextet_value;
 			// in a given group, the hi b64_sextet_mask is the first char, and lo b64_sextet_mask is the last char.
 			joined|= ~sextet_value << ((b64_sextet_count_per_group - 1 - sextet_index) * sextet_size);
@@ -224,7 +221,7 @@ bool base64_decode(const char *const encoded_data, size_t encoded_len_raw, uint8
 			if (encoded_char == b64_padding) {
 				decoded_sextets[usable_encoded_char_count++]= 0;
 			} else if (!isspace(encoded_char)) {
-				const int8_t sextet_value= decode_table[static_cast<unsigned char>(encoded_char)].sextet_negated_if_valid;
+				const int8_t sextet_value= decode_table[static_cast<unsigned char>(encoded_char)];
 				success= success && sextet_value;
 				lo_used_sextet_offset= (b64_sextet_count_per_group - usable_encoded_char_count - 1) * sextet_size;
 				decoded_sextets[usable_encoded_char_count++]= ~sextet_value;
@@ -262,7 +259,7 @@ bool base64_decode(const char *const encoded_data, size_t encoded_len_raw, uint8
 char *base64_encode(const uint8_t *const data, size_t len, size_t *const out_len) {
 
 	constexpr char encode_table[]= "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-	static_assert(COUNT_OF(encode_table) == 0100 + 1);
+	static_assert(COUNT_OF(encode_table)-1 == 0100);
 
 	assert(data);
 	assert(out_len);
