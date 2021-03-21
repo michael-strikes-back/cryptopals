@@ -11,6 +11,7 @@ void problem_node<prob_no>::try_invoke(
 		int argc,
 		const char **argv) {
 	// idea here is to compile a linked list, down to 1.
+	// when optimized, this essentially becomes a switch statement due to inlining.
 
 	if (problem_index == this_problem_number) {
 		invoke(argc, argv);

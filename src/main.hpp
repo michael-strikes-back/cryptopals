@@ -3,12 +3,6 @@
 #ifndef MAIN_HPP
 #define MAIN_HPP
 
-#ifdef NO
-typedef void (problem_func*)(int argc, const char **argv) t_problem_func;
-
-typedef t_problem_func[problem_count] t_problem_functions;
-#endif // NO
-
 template<unsigned prob_no>
 struct problem_node {
 	static constexpr unsigned this_problem_number= prob_no;
@@ -19,6 +13,7 @@ struct problem_node {
 		int argc,
 		const char **argv);
 
+	// to implement a new problem, specialize this method and bump max_problem_number in main.cpp
 	static void invoke(
 		int argc,
 		const char **argv);
