@@ -3,11 +3,11 @@
 #include <iostream>
 #include "main.hpp"
 
-constexpr int max_problem_number= 8;
+constexpr unsigned max_problem_number= 8;
 
-template<int prob_no>
+template<unsigned prob_no>
 void problem_node<prob_no>::try_invoke(
-		int problem_index,
+		unsigned problem_index,
 		int argc,
 		const char **argv) {
 	// idea here is to compile a linked list, down to 1.
@@ -20,7 +20,7 @@ void problem_node<prob_no>::try_invoke(
 }
 
 template<> struct problem_node<0> {
-	static inline void try_invoke(int problem_index, int argc, const char **argv) {
+	static inline void try_invoke(unsigned problem_index, int argc, const char **argv) {
 		// we didn't find the problem_index
 		assert(0);
 	}
@@ -31,9 +31,10 @@ template<> struct problem_node<0> {
 };
 
 int main(const int argc, const char **argv) {
+	constexpr int signed_max_problem_digit= max_problem_number;
 	
 	if (argc < 2 || argv[1] == nullptr || argv[1][0] != '-' ||
-		argv[1][1] < '1' || argv[1][1] > ('0'+max_problem_number) || argv[1][2] != '\0') {
+		argv[1][1] < '1' || argv[1][1] > ('0'+signed_max_problem_digit) || argv[1][2] != '\0') {
 		fprintf(stderr, "Option required. [-1 .. -%d] <args>\n", max_problem_number);
 		fputc('\n', stderr);
 		return 1;
@@ -49,3 +50,4 @@ int main(const int argc, const char **argv) {
 
 	return 0;
 }
+
